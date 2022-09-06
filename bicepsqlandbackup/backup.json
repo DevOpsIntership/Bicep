@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.9.1.41621",
+      "templateHash": "80576668084244860"
+    }
+  },
+  "parameters": {
+    "WebappName": {
+      "type": "string",
+      "defaultValue": "Mytestappbackup"
+    },
+    "backupname": {
+      "type": "string",
+      "defaultValue": "backup"
+    },
+    "frequencyInterval": {
+      "type": "int",
+      "defaultValue": 7
+    },
+    "retentionPeriodInDays": {
+      "type": "int",
+      "defaultValue": 30
+    },
+    "startTime": {
+      "type": "string",
+      "defaultValue": "8/30/2022 9:00"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/sites/config",
+      "apiVersion": "2022-03-01",
+      "name": "[format('{0}/{1}', parameters('WebappName'), parameters('backupname'))]",
+      "properties": {
+        "backupName": "[parameters('backupname')]",
+        "backupSchedule": {
+          "frequencyInterval": "[parameters('frequencyInterval')]",
+          "frequencyUnit": "Day",
+          "keepAtLeastOneBackup": true,
+          "retentionPeriodInDays": "[parameters('retentionPeriodInDays')]",
+          "startTime": "[parameters('startTime')]"
+        },
+        "storageAccountUrl": "https://dmsfgo4iyvxpe.blob.core.windows.net/fsafas?sp=racwdli&st=2022-08-30T16:10:07Z&se=2022-08-31T00:10:07Z&spr=https&sv=2021-06-08&sr=c&sig=KE0jwDqAz9zN057mf1h%2BYSlUjoeXk9%2FEJtsRB4%2BrDJo%3D"
+      }
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.9.1.41621",
+      "templateHash": "17981271130054849140"
+    }
+  },
+  "parameters": {
+    "Vnets": {
+      "type": "object"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2022-01-01",
+      "name": "[parameters('Vnets').name]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('Vnets').VnetCidr]"
+          ]
+        }
+      }
+    },
+    {
+      "copy": {
+        "name": "Nsg",
+        "count": "[length(parameters('Vnets').VnetSubnets)]"
+      },
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2022-01-01",
+      "name": "[parameters('Vnets').VnetSubnets[copyIndex()].nsg.name]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "copy": [
+          {
+            "name": "securityRules",
+            "count": "[length(parameters('Vnets').VnetSubnets[copyIndex()].nsg.NsgRules)]",
+            "input": {
+              "name": "[parameters('Vnets').VnetSubnets[copyIndex()].nsg.NsgRules[copyIndex('securityRules')].name]",
+              "properties": {
+                "access": "[parameters('Vnets').VnetSubnets[copyIndex()].nsg.NsgRules[copyIndex('securityRules')].access]",
+                "priority": "[parameters('Vnets').VnetSubnets[copyIndex()].nsg.NsgRules[copyIndex('securityRules')].priority]",
+                "direction": "[parameters('Vnets').VnetSubnets[copyIndex()].nsg.NsgRules[copyIndex('securityRules')].direction]",
+                "protocol": "[parameters('Vnets').VnetSubnets[copyIndex()].nsg.NsgRules[copyIndex('securityRules')].protocol]",
+                "destinationPortRange": "[parameters('Vnets').VnetSubnets[copyIndex()].nsg.NsgRules[copyIndex('securityRules')].port]",
+                "sourceAddressPrefix": "[parameters('Vnets').VnetSubnets[copyIndex()].nsg.NsgRules[copyIndex('securityRules')].cidr]",
+                "sourcePortRange": "*",
+                "destinationAddressPrefix": "*"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "copy": {
+        "name": "subnets",
+        "count": "[length(parameters('Vnets').VnetSubnets)]",
+        "mode": "serial",
+        "batchSize": 1
+      },
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2022-01-01",
+      "name": "[format('{0}/{1}', parameters('Vnets').name, parameters('Vnets').VnetSubnets[copyIndex()].name)]",
+      "properties": {
+        "addressPrefix": "[parameters('Vnets').VnetSubnets[copyIndex()].cidr]",
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('Vnets').VnetSubnets[copyIndex()].nsg.name)]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('Vnets').name)]",
+        "Nsg"
+      ]
+    }
+  ]
+}

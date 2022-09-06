@@ -1,0 +1,58 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "Vnets": {
+            "value":{
+                "name":"agentsVnet",
+                "Vnetcidr":"10.0.0.0/16",
+                "VnetSubnets":[
+                    {
+                    "name": "jumpboxsubnet",
+                    "cidr": "10.0.0.128/25",
+                    "nsg" : {
+                        "name":"jumpboxsubnet",
+                        "NsgRules":[
+                            {
+                                "nsg": "jumpboxnsg",
+                                "name": "allowRDP",
+                                "priority":100,
+                                "access": "Allow",
+                                "direction": "Inbound",
+                                "protocol": "Tcp",
+                                "port": "3389",
+                                "cidr": "Internet"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name":"agentssubnet",
+                    "cidr": "10.0.0.0/25",
+                    "nsg":{
+                        "name":"agentubuntunsg",
+                        "NsgRules":[
+                            {
+                            "nsg": "agentubuntunsg",
+                            "name": "AllTrafic",
+                            "priority":101,
+                            "access": "Allow",
+                            "direction": "Outbound",
+                            "protocol": "*",
+                            "port": "*",
+                            "cidr": "Internet"
+                            }
+                        ]
+                    }
+
+                }
+
+          
+                ]
+
+            }
+                
+        }
+    }  
+    
+}    

@@ -1,0 +1,129 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.9.1.41621",
+      "templateHash": "17066509354074654768"
+    }
+  },
+  "parameters": {
+    "ServerName": {
+      "type": "string"
+    },
+    "sqlDBname": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "administratorLogin": {
+      "type": "string"
+    },
+    "administratorPassword": {
+      "type": "secureString"
+    },
+    "skuTier": {
+      "type": "string"
+    },
+    "skuName": {
+      "type": "string"
+    },
+    "monthlyRetention": {
+      "type": "string"
+    },
+    "weeklyRetention": {
+      "type": "string"
+    },
+    "weekOfYear": {
+      "type": "int"
+    },
+    "yearlyRetention": {
+      "type": "string"
+    },
+    "diffBackupIntervalInHours": {
+      "type": "int"
+    },
+    "retentionDays": {
+      "type": "int"
+    },
+    "IpRange": {
+      "type": "array",
+      "defaultValue": [
+        {
+          "name": "Rule",
+          "startIpAddress": "89.151.39.134",
+          "endIpAddress": "89.151.39.134"
+        }
+      ]
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[parameters('ServerName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "administratorLogin": "[parameters('administratorLogin')]",
+        "administratorLoginPassword": "[parameters('administratorPassword')]"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[format('{0}/{1}', parameters('ServerName'), parameters('sqlDBname'))]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('skuName')]",
+        "tier": "[parameters('skuTier')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('ServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/backupLongTermRetentionPolicies",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('ServerName'), parameters('sqlDBname'), 'default')]",
+      "properties": {
+        "monthlyRetention": "[parameters('monthlyRetention')]",
+        "weeklyRetention": "[parameters('weeklyRetention')]",
+        "weekOfYear": "[parameters('weekOfYear')]",
+        "yearlyRetention": "[parameters('yearlyRetention')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('ServerName'), parameters('sqlDBname'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/backupShortTermRetentionPolicies",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('ServerName'), parameters('sqlDBname'), 'default')]",
+      "properties": {
+        "diffBackupIntervalInHours": "[parameters('diffBackupIntervalInHours')]",
+        "retentionDays": "[parameters('retentionDays')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('ServerName'), parameters('sqlDBname'))]"
+      ]
+    },
+    {
+      "copy": {
+        "name": "FireWallRules",
+        "count": "[length(parameters('IpRange'))]"
+      },
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[format('{0}/{1}', parameters('ServerName'), parameters('IpRange')[copyIndex()].name)]",
+      "properties": {
+        "startIpAddress": "[parameters('IpRange')[copyIndex()].startIpAddress]",
+        "endIpAddress": "[parameters('IpRange')[copyIndex()].endIpAddress]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('ServerName'))]"
+      ]
+    }
+  ]
+}

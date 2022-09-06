@@ -1,0 +1,111 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.9.1.41621",
+      "templateHash": "3773122367612651847"
+    }
+  },
+  "parameters": {
+    "Vms": {
+      "type": "array"
+    }
+  },
+  "variables": {
+    "uid": "[uniqueString(resourceGroup().id)]",
+    "vnet": "agentsVnet"
+  },
+  "resources": [
+    {
+      "copy": {
+        "name": "PublicIp",
+        "count": "[length(parameters('Vms'))]"
+      },
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2022-01-01",
+      "name": "[parameters('Vms')[copyIndex()].Ipname]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "[parameters('Vms')[copyIndex()].publicIPAllocationMethod]",
+        "dnsSettings": {
+          "domainNameLabel": "[format('{0}-{1}', parameters('Vms')[copyIndex()].name, variables('uid'))]"
+        }
+      }
+    },
+    {
+      "copy": {
+        "name": "Nic",
+        "count": "[length(parameters('Vms'))]"
+      },
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2022-01-01",
+      "name": "[format('{0}-Nic', parameters('Vms')[copyIndex()].name)]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('Vms')[copyIndex()].IpName)]"
+              },
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnet'), parameters('Vms')[copyIndex()].subnet)]"
+              }
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "PublicIp"
+      ]
+    },
+    {
+      "copy": {
+        "name": "vm",
+        "count": "[length(parameters('Vms'))]"
+      },
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2021-03-01",
+      "name": "[parameters('Vms')[copyIndex()].name]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('Vms')[copyIndex()].Vmsize]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('Vms')[copyIndex()].name]",
+          "adminUsername": "adminUsername",
+          "adminPassword": "Lpu06528@123"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[parameters('Vms')[copyIndex()].publisher]",
+            "offer": "[parameters('Vms')[copyIndex()].offer]",
+            "sku": "[parameters('Vms')[copyIndex()].sku]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "[parameters('Vms')[copyIndex()].disksku]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-Nic', parameters('Vms')[copyIndex()].name))]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "Nic"
+      ]
+    }
+  ]
+}
